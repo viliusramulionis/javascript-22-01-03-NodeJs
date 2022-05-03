@@ -35,6 +35,14 @@ app.get('/loop', (req, res) => {
     res.render('loop', variables)
 })
 
+app.get('/test', async (req, res) => {
+  const data = await fs.readFile('./database.json', 'utf8')
+
+  let parsedJson = JSON.parse(data)
+  console.log(parsedJson)
+  res.render('test', {parsedJson})
+})
+
 app.get('/client-submit', async (req, res) => {
     if(parseInt( Object.keys(req.query).length ) > 0) {
 
