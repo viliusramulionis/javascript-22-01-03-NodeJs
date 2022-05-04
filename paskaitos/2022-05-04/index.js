@@ -1,3 +1,27 @@
+// 1. Klientų šablone sukurkite nuorodą pavadinimu atsijungti. 
+// Sukurkite GET routerį aukščiau įvardintai nuorodai adresu '/logout'
+// Nuėjus šiuo adresu įvykdykite vartotojo "atjungimą" nuo sistemos.
+// 2. Sukurkite naują sesijoje saugomą indeksą pavadinimu "user".
+// Atvaizduokite vartotojo prisijungimo vardą šablone šalia atsijungimo nuorodos.
+
+// 3. Klientų šablone sukurkite naują mygtuką pavadinimu "Pridėti naują klientą" ir priskirkite jam express GET routerį.
+// Paspaudus ant mygtuko ir nuėjus šia nuoroda atvaizduokite naują handlebars šabloną kuriame būtų pateikta html forma siunčianti duomenis POST metodu.
+// Reikalingi šie laukeliai:
+// Įmonės pavadinimas,
+// Vardas ir pavardė,
+// Adresas,
+// Telefono numeris,
+// El. pašto adresas,
+// PVM kodas
+
+// Sukurkite naują express POST routerį priimti persiunčiamai informacijai, patikrinkite ar duomenys nėra tušti ir išssaugokite duomenis database.json faile. 
+// Aprašykite validacijos scenarijus ir grąžinkite atitinkamas žinutes.
+
+// PAPILDOMAS (Jeigu spėsite)
+
+// Atvaizduokite visus klientus iš duomenų bazės failo clients.handlebars šablone. Nesant nei vienam klientui arba neegzistuojant duomenų bazės failui, šablone atvaizduokite žinutę:
+// Nėra nei vieno priregistruoto kliento.
+
 import express from 'express'
 import {dirname} from 'path'
 import { fileURLToPath } from 'url'
@@ -76,11 +100,71 @@ app.post('/login-submit', (req, res) => {
 
 })
 
-app.get('/clients', (req, res) => {
+app.get('/clients', async (req, res) => {
   if(req.session.loggedin != undefined && req.session.loggedin) {
-    res.render('clients')
+
+    let parsedJson = false
+    let message = ''
+
+    try {
+      const data = await fs.readFile('./database.json', 'utf8')
+
+      parsedJson = JSON.parse(data)
+  
+  } catch {
+      message = 'Nera issaugota jokiu klientu'
+  }
+
+    res.render('clients', {parsedJson, message})
   } else {
     res.redirect(url)
+  }
+})
+
+const auth = (req, res) => {
+  if(req.session.loggedin === undefined || !req.session.loggedin) {
+    res.redirect(url)
+    return false
+  }
+
+  return true
+}
+
+app.get('/new-client', (req, res) => {
+  if( !auth(req, res) )
+    return 
+
+  res.render('newclient')
+})
+
+app.post('/client-submit', async (req, res) => {
+  if(parseInt( Object.keys(req.body).length ) > 0) { 
+
+    let json = []
+
+    try {
+        const data = await fs.readFile('./database.json', 'utf8')
+
+        let parsedJson = JSON.parse(data)
+
+        parsedJson.push(req.body)
+
+        json = parsedJson
+    
+    } catch {
+        json.push(req.body)
+
+        console.log('Duomenu bazes failas sukurtas')
+    }
+    
+    //Informacijos issaugojimas faile
+    
+    await fs.writeFile('./database.json', JSON.stringify(json))
+
+    res.redirect(url + '/clients')
+
+  } else {
+    res.send('Negauti duomenys')
   }
 })
 
