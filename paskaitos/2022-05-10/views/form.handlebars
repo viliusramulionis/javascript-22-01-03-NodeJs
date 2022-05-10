@@ -1,0 +1,14 @@
+{{#if photos}}
+<div class="gallery">
+    <ul>
+        {{#each photos}}
+            <li data-id="{{id}}"><img src="/uploads/{{picture}}" alt=""></li>
+        {{/each}}
+    </ul>
+</div>
+{{/if}}
+
+<form method="POST" action="/upload_file" enctype="multipart/form-data">
+    <input type="file" name="photo">
+    <button type="submit">Siųsti</button>
+</form>
