@@ -1,0 +1,19 @@
+{{#if tasks}}
+    <div class="list-group">
+        {{#each tasks}}
+            <label class="list-group-item d-flex gap-3">
+                <input class="form-check-input flex-shrink-0" 
+                type="checkbox" 
+                value="{{dataValues.id}}" 
+                style="font-size: 1.375em;" 
+                {{#if dataValues.done}}checked="checked"{{/if}}
+                >
+                <span class="pt-1 form-checked-content">
+                    <strong>{{dataValues.task}}</strong>
+                </span>
+            </label>
+        {{/each}}
+    </div>
+{{else}}
+    <h3>{{message}}</h3>
+{{/if}}
