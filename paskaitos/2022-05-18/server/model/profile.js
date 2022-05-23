@@ -3,18 +3,10 @@ import { users } from './users.js'
 
 export const profile = (sequelize) => {
     const schema = {
-        userId: {
-            type: DataTypes.INTEGER, 
-            allownull: false,
-            references: {
-                model: 'Users',
-                key: 'id'
-            }
-        },
         headline: {type: DataTypes.STRING},
         subheadline: {type: DataTypes.STRING},
         description: {type: DataTypes.TEXT},
-        hourly_rate: {type: DataTypes.INTEGER, allownull: false},
+        hourly_rate: {type: DataTypes.INTEGER, allowNull: false},
         location: {type: DataTypes.STRING}
     }
     
@@ -23,4 +15,6 @@ export const profile = (sequelize) => {
 
     Users.hasOne(Profile)
     Profile.belongsTo(Users)
+
+    return Profile
 }
