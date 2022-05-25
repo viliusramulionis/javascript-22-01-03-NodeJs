@@ -7,6 +7,7 @@ export const profile = (sequelize) => {
         subheadline: {type: DataTypes.STRING},
         description: {type: DataTypes.TEXT},
         hourly_rate: {type: DataTypes.INTEGER, allowNull: false},
+        profile_image: {type: DataTypes.STRING},
         location: {type: DataTypes.STRING}
     }
     

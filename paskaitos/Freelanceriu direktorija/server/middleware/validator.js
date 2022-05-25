@@ -6,7 +6,7 @@ const validator = (req, next, schema) => {
     }
 
     const {error, value} = schema.validate(req.body, options)
-
+    console.log(error)
     if(error) {
         next('Ivyko validacijos klaida')
     } else {
