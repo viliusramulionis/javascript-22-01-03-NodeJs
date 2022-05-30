@@ -1,10 +1,11 @@
 import express from 'express'
 import Joi from 'joi'
 import multer from 'multer'
-import {access, mkdir} from 'fs/promises'
+import { access, mkdir } from 'fs/promises'
 import validator from '../middleware/validator.js'
-import {exists, insert, getAll} from '../service/profile.js'
-import {insert as portfolioInsert} from '../service/portfolio.js'
+import { exists, insert, getAll, getById, getByUserId, update } from '../service/profile.js'
+import { insert as portfolioInsert, getAll as portfolioItems } from '../service/portfolio.js'
+import { Op } from 'sequelize'
 
 const Router = express.Router()
 
@@ -25,10 +26,10 @@ const storage = multer.diskStorage({
     }
 })
 
-const upload = multer({ 
+const upload = multer({
     storage: storage,
     fileFilter: (req, file, callback) => {
-        if(
+        if (
             file.mimetype === 'image/jpeg' ||
             file.mimetype === 'image/png' ||
             file.mimetype === 'image/gif'
@@ -54,43 +55,130 @@ const profileSchema = (req, res, next) => {
 }
 
 const profileFileFields = upload.fields([
-    {name: 'profile_image', maxCount: 1},
-    {name: 'portfolio_items', maxCount: 20}
+    { name: 'profile_image', maxCount: 1 },
+    { name: 'portfolio_items', maxCount: 20 }
 ])
 
 Router.get('/', async (req, res) => {
     const profiles = await getAll()
 
-    if(profiles) {
-        res.json({message: profiles, status: 'success'})
+    if (profiles) {
+        res.json({ message: profiles, status: 'success' })
     } else {
-        res.json({message: 'Įvyko klaida', status: 'danger'})
+        res.json({ message: 'Įvyko klaida', status: 'danger' })
     }
 })
 
-Router.post('/create', profileFileFields, profileSchema,  async (req, res) => {
-    if(await exists({
+Router.get('/sort/asc', async (req, res) => {
+    const profiles = await getAll({
+        order: [
+            ['headline', 'ASC']
+        ]
+    })
+
+    if (profiles) {
+        res.json({ message: profiles, status: 'success' })
+    } else {
+        res.json({ message: 'Įvyko klaida', status: 'danger' })
+    }
+})
+
+Router.get('/sort/desc', async (req, res) => {
+    const profiles = await getAll({
+        order: [
+            ['headline', 'DESC']
+        ]
+    })
+
+    if (profiles) {
+        res.json({ message: profiles, status: 'success' })
+    } else {
+        res.json({ message: 'Įvyko klaida', status: 'danger' })
+    }
+})
+
+Router.get('/filter/hourly_rate/:rate', async (req, res) => {
+    const rate = req.params.rate
+    const profiles = await getAll({
+        where: {
+            hourly_rate: {
+                [Op.gte]: rate
+            }
+        }
+    })
+
+    if (profiles) {
+        res.json({ message: profiles, status: 'success' })
+    } else {
+        res.json({ message: 'Įvyko klaida', status: 'danger' })
+    }
+})
+
+Router.get('/single/:id', async (req, res) => {
+    const id = req.params.id
+    const profile = await getById(id)
+    if (profile) {
+        const portfolio = await portfolioItems(profile.id)
+
+        if (portfolio)
+            profile.portfolio = portfolio
+
+        res.json({ message: profile, status: 'success' })
+    } else {
+        res.json({ message: 'Įvyko klaida', status: 'danger' })
+    }
+})
+
+Router.post('/create', profileFileFields, profileSchema, async (req, res) => {
+    if (await exists({
         UserId: req.body.UserId
     })) {
-        res.json({status: 'danger', message: 'Profilis šiam vartotojui jau yra sukurtas'})
+        res.json({ status: 'danger', message: 'Profilis šiam vartotojui jau yra sukurtas' })
         return
-    } 
-    
-    if(req.files.profile_image) {
-        let path = req.files.profile_image[0].path.replaceAll('\\', '/') 
+    }
+
+    if (req.files.profile_image) {
+        let path = req.files.profile_image[0].path.replaceAll('\\', '/')
         req.body.profile_image = path
     }
-    
-    let ProfileId= false
 
-    if(ProfileId = await insert(req.body)) {
+    let ProfileId = false
+
+    if (ProfileId = await insert(req.body)) {
         req.files.portfolio_items.map(async image => {
-            let path = image.path.replaceAll('\\', '/') 
+            let path = image.path.replaceAll('\\', '/')
             await portfolioInsert({ image_url: path, ProfileId })
         })
-        res.json({status: 'success', message: 'Profilis sėkmingai sukurtas'})
+        res.json({ status: 'success', message: 'Profilis sėkmingai sukurtas' })
     } else {
-        res.json({status: 'danger', message: 'Įvyko klaida'})
+        res.json({ status: 'danger', message: 'Įvyko klaida' })
+    }
+})
+
+Router.get('/edit/:user_id', async (req, res) => {
+    const user_id = req.params.user_id
+
+    const profile = await getByUserId(user_id)
+    if (profile) {
+        const portfolio = await portfolioItems(profile.id)
+
+        if (portfolio)
+            profile.portfolio = portfolio
+
+        res.json({ message: profile, status: 'success' })
+    } else {
+        res.json({ message: 'Įvyko klaida', status: 'danger' })
+    }
+})
+
+Router.put('/update/', profileSchema, async (req, res) => {
+    const user_id = req.body.UserId //Paiamame userio id is perduodamos informacijos
+    const profile = await getByUserId(user_id) //Susirandam profilio informacija pagal userio id
+
+    if(await update(profile.id, req.body)) { //Tikriname ar pavyko atnaujinimas perduodant profilio id ir atnaujinta informacija
+        res.json({message: 'Profilis sėkmingai atnaujintas', status: 'success'})
+    } else {
+        res.json({message: 'Įvyko klaida', status: 'danger'})
     }
 })
 

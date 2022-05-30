@@ -1,8 +1,9 @@
 import { database } from '../database/connection.js'
 
-export const getAll = async () => {
+export const getAll = async ( conditions = {} ) => {
+    return await database.Profile.findAll(conditions)
     try {
-        return await database.Profile.findAll()
+        
     } catch {
         return false
     }
@@ -10,7 +11,19 @@ export const getAll = async () => {
 
 export const getById = async (id) => {
     try {
-        return await database.Profile.findByPk(id)
+        return await database.Profile.findByPk(id, {raw: true})
+    } catch {
+        return false
+    }
+}
+
+export const getByUserId = async (id) => {
+    try {
+        return await database.Profile.findOne({
+            where: {
+                UserId: id
+            }
+        }, {raw: true})
     } catch {
         return false
     }
